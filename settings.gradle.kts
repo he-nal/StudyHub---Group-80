@@ -22,5 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "StudyHubFireBaseDB"
+rootProject.name = "StudyHub"
 include(":app")
+ 

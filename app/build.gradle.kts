@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.studyhubfirebasedb"
+    namespace = "com.group80.studyhub"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.studyhubfirebasedb"
+        applicationId = "com.group80.studyhub"
         minSdk = 24
         targetSdk = 37
         versionCode = 1
@@ -22,7 +22,8 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
+                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
             }
         }
     }
