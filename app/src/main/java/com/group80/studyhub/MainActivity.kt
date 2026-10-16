@@ -7,10 +7,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import com.group80.studyhub.ui.theme.StudyHubTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,28 +23,49 @@ class MainActivity : ComponentActivity() {
         setContent {
             StudyHubTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                    StudyHubApp(modifier = Modifier.padding(innerPadding))
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+// Lets rememberSaveable keep the logged-in user when the phone rotates:
+// saves them as [firstName, role] and rebuilds them from that list.
+private val LoggedInUserSaver = listSaver<LoggedInUser?, String>(
+    save = { user -> if (user == null) emptyList() else listOf(user.firstName, user.role) },
+    restore = { list -> if (list.isEmpty()) null else LoggedInUser(list[0], list[1]) }
+)
 
-@Preview(showBackground = true)
+// Decides which screen to show.
 @Composable
-fun GreetingPreview() {
-    StudyHubTheme {
-        Greeting("Android")
+fun StudyHubApp(modifier: Modifier = Modifier) {
+    // Who is logged in. null means nobody is.
+    var loggedInUser by rememberSaveable(stateSaver = LoggedInUserSaver) {
+        mutableStateOf<LoggedInUser?>(null)
+    }
+    var showSignUp by rememberSaveable { mutableStateOf(false) }
+
+    val user = loggedInUser
+    when {
+        user != null && user.role == "ADMIN" -> AdminWelcomeScreen(
+            user = user,
+            onSignOut = { loggedInUser = null },
+            modifier = modifier
+        )
+        user != null -> WelcomeScreen(
+            user = user,
+            onSignOut = { loggedInUser = null },
+            modifier = modifier
+        )
+        showSignUp -> SignUpPlaceholderScreen(
+            onBack = { showSignUp = false },
+            modifier = modifier
+        )
+        else -> LoginScreen(
+            onLoginSuccess = { loggedInUser = it },
+            onSignUpClick = { showSignUp = true },
+            modifier = modifier
+        )
     }
 }
