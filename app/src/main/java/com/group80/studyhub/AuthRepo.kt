@@ -27,10 +27,10 @@ object AuthRepository {
 
  //getting the profile by the user id
     private suspend fun loadProfile(uid: String): LoggedInUser {
-        val snap = db.child("users").child(uid).get().await()
+        val database = db.child("users").child(uid).get().await()
         return LoggedInUser(
-            firstName = snap.child("firstName").getValue(String::class.java) ?: "",
-            role = snap.child("role").getValue(String::class.java) ?: "STUDENT"
+            firstName = database.child("firstName").getValue(String::class.java) ?: "",
+            role = database.child("role").getValue(String::class.java) ?: "STUDENT"
         )
     }
 

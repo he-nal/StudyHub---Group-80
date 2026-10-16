@@ -45,7 +45,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
 
     fun attemptLogin() {
-        usernameError = if (username.isBlank()) "Username is required" else null
+        usernameError = if (username.isBlank()) "Email is required" else null
         passwordError = if (password.isBlank()) "Password is required" else null
         loginError = null
 
@@ -74,7 +74,7 @@ fun LoginScreen(
                 username = it
                 usernameError = null  // hide the error once they start typing
             },
-            label = { Text("Username") },
+            label = { Text("Email") },
             isError = usernameError != null,
             supportingText = { usernameError?.let { Text(it) } },
             singleLine = true,
