@@ -2,12 +2,12 @@ package com.group80.studyhub
 
 import java.util.UUID
 
-// TEMPORARY: accounts are kept in this list until the database is connected.
-// Teammate: replace the duplicate-email check and users.add(...) with the real database calls.
+// TEMPORARY: single shared in-memory store until the database is connected.
 class RegistrationService {
 
     private val users = mutableListOf<User>()
 
+    @Synchronized
     fun register(
         first: String, last: String, email: String,
         password: String, confirm: String,
@@ -22,7 +22,7 @@ class RegistrationService {
             onResult(Result.failure(IllegalArgumentException("Please fix the highlighted fields")))
             return
         }
-        if (users.any { it.email == e }) {
+        if (users.any { it.email.equals(e, ignoreCase = true) }) {
             onResult(Result.failure(IllegalArgumentException("Email already registered")))
             return
         }
@@ -35,4 +35,12 @@ class RegistrationService {
         users.add(user)
         onResult(Result.success(user))
     }
+
+    @Synchronized
+    fun findByCredentials(email: String, password: String): User? {
+        val e = email.trim().lowercase()
+        return users.firstOrNull { it.email.equals(e, ignoreCase = true) && it.password == password }
+    }
+    @Synchronized
+    fun allUsers(): List<User> = users.toList()
 }

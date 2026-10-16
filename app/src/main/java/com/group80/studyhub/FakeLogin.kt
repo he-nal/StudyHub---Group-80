@@ -6,10 +6,11 @@ data class LoggedInUser(
     val role: String
 )
 
-// TEMPORARY: stands in for Person 1's database login until it exists.
-// When it does, replace the body of login() with the real database call.
-// The screens only depend on this function, so they won't need to change.
+// TEMPORARY: stands in for the database login until it exists.
 object FakeLogin {
+
+    // Set by MainActivity so registered accounts can log in.
+    var registeredLookup: ((String, String) -> LoggedInUser?)? = null
 
     fun login(username: String, password: String): LoggedInUser? {
         return when {
@@ -19,7 +20,7 @@ object FakeLogin {
                 LoggedInUser("Sam", "STUDENT")
             username == "leader1" && password == "pass123" ->
                 LoggedInUser("Lee", "STUDY_GROUP_LEADER")
-            else -> null
+            else -> registeredLookup?.invoke(username, password)
         }
     }
 }

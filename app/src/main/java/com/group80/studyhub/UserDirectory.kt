@@ -16,18 +16,22 @@ data class UserSummary(
 }
 
 /**
- * TEMPORARY: returns sample data so the admin screen can be seen and tested.
- * Jubair: replace the body of fetchAll() with the real database read.
+ * TEMPORARY: reads accounts from the in-memory RegistrationService.
+ * Replace the body of fetchAll() with the real database read later.
  */
 object UserDirectory {
     suspend fun fetchAll(): Result<List<UserSummary>> {
         delay(300)
         return Result.success(
-            listOf(
-                UserSummary("1", "Sam", "Student", "sam@example.com", "STUDENT"),
-                UserSummary("2", "Lee", "Leader", "lee@example.com", "STUDY_GROUP_LEADER"),
-                UserSummary("3", "Ava", "Student", "ava@example.com", "STUDENT")
-            )
+            registrationService.allUsers().map { u ->
+                UserSummary(
+                    uid = u.id,
+                    firstName = u.firstName,
+                    lastName = u.lastName,
+                    email = u.email,
+                    role = if (u is StudyGroupLeader) "STUDY_GROUP_LEADER" else "STUDENT"
+                )
+            }
         )
     }
 }

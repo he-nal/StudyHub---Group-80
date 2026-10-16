@@ -1,5 +1,5 @@
 package com.group80.studyhub
-import androidx.compose.runtime.remember
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -37,6 +37,9 @@ private val LoggedInUserSaver = listSaver<LoggedInUser?, String>(
     restore = { list -> if (list.isEmpty()) null else LoggedInUser(list[0], list[1]) }
 )
 
+// One shared service for the whole app (survives rotation).
+val registrationService = RegistrationService()
+
 // Decides which screen to show.
 @Composable
 fun StudyHubApp(modifier: Modifier = Modifier) {
@@ -44,8 +47,17 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
     var loggedInUser by rememberSaveable(stateSaver = LoggedInUserSaver) {
         mutableStateOf<LoggedInUser?>(null)
     }
-    var showSignUp by rememberSaveable { mutableStateOf(false)}
-        val registrationService = remember { RegistrationService() }
+    var showSignUp by rememberSaveable { mutableStateOf(false) }
+
+    // Lets accounts created on the register screen log in.
+    FakeLogin.registeredLookup = { email, pass ->
+        registrationService.findByCredentials(email, pass)?.let { u ->
+            LoggedInUser(
+                u.firstName,
+                if (u is StudyGroupLeader) "STUDY_GROUP_LEADER" else "STUDENT"
+            )
+        }
+    }
 
     val user = loggedInUser
     when {
