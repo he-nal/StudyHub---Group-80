@@ -58,7 +58,8 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
             onSignOut = { loggedInUser = null },
             modifier = modifier
         )
-        showSignUp -> SignUpPlaceholderScreen(
+        showSignUp -> RegisterScreen(
+            onRegistered = { showSignUp = false },
             onBack = { showSignUp = false },
             modifier = modifier
         )

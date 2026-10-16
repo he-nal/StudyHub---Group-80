@@ -33,6 +33,28 @@ object AuthRepository {
             role = database.child("role").getValue(String::class.java) ?: "STUDENT"
         )
     }
+    suspend fun register(
+        first: String,
+        last: String,
+        email: String,
+        password: String,
+        asLeader: Boolean
+    ): Result<Unit> = try {
+        val cleanEmail = email.trim().lowercase()
+        val uid = auth.createUserWithEmailAndPassword(cleanEmail, password).await().user!!.uid
+        db.child("users").child(uid).setValue(
+            mapOf(
+                "firstName" to first.trim(),
+                "lastName" to last.trim(),
+                "email" to cleanEmail,
+                "role" to if (asLeader) "STUDY_GROUP_LEADER" else "STUDENT"
+            )
+        ).await()
+        auth.signOut() // they log in normally afterwards
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 
 
 
