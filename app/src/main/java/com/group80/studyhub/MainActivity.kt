@@ -40,7 +40,6 @@ private val LoggedInUserSaver = listSaver<LoggedInUser?, String>(
 // Decides which screen to show.
 @Composable
 fun StudyHubApp(modifier: Modifier = Modifier) {
-    // Who is logged in. null means nobody is.
     var loggedInUser by rememberSaveable(stateSaver = LoggedInUserSaver) {
         mutableStateOf<LoggedInUser?>(null)
     }
@@ -50,7 +49,10 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
     when {
         user != null -> WelcomeScreen(
             user = user,
-            onSignOut = { loggedInUser = null },
+            onSignOut = {
+                AuthRepository.signOut()
+                loggedInUser = null
+            },
             modifier = modifier
         )
         showSignUp -> SignUpPlaceholderScreen(

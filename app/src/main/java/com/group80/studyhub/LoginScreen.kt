@@ -25,6 +25,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.group80.studyhub.ui.theme.StudyHubTheme
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -40,21 +42,20 @@ fun LoginScreen(
     var usernameError by rememberSaveable { mutableStateOf<String?>(null) }
     var passwordError by rememberSaveable { mutableStateOf<String?>(null) }
     var loginError by rememberSaveable { mutableStateOf<String?>(null) }
+    val scope = rememberCoroutineScope()
 
     fun attemptLogin() {
         usernameError = if (username.isBlank()) "Username is required" else null
         passwordError = if (password.isBlank()) "Password is required" else null
         loginError = null
 
+
         // Stop here if either field is empty; the messages above will show.
         if (usernameError != null || passwordError != null) return
-
-        val user = FakeLogin.login(username.trim(), password)
-        if (user == null) {
-            loginError = "Invalid username or password"
-        } else {
-            onLoginSuccess(user)
+        scope.launch {
+            AuthRepository.login(username.trim(), password).onSuccess { onLoginSuccess(it) }.onFailure { loginError = "Invalid username or password" }
         }
+
     }
 
     Column(
