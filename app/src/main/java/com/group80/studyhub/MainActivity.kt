@@ -1,5 +1,5 @@
 package com.group80.studyhub
-
+import androidx.compose.runtime.remember
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -44,7 +44,8 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
     var loggedInUser by rememberSaveable(stateSaver = LoggedInUserSaver) {
         mutableStateOf<LoggedInUser?>(null)
     }
-    var showSignUp by rememberSaveable { mutableStateOf(false) }
+    var showSignUp by rememberSaveable { mutableStateOf(false)}
+        val registrationService = remember { RegistrationService() }
 
     val user = loggedInUser
     when {
@@ -58,8 +59,9 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
             onSignOut = { loggedInUser = null },
             modifier = modifier
         )
-        showSignUp -> SignUpPlaceholderScreen(
-            onBack = { showSignUp = false },
+        showSignUp -> RegisterScreen(
+            service = registrationService,
+            onRegistered = { showSignUp = false },
             modifier = modifier
         )
         else -> LoginScreen(
