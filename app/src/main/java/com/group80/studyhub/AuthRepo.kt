@@ -5,7 +5,7 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 
 /**Src: // https://www.youtube.com/watch?v=SwyjhKCz6Xk
- * Used this video for the suspend coroutine
+ * Used this video for the suspend coroutine + scope
  */
 
 data class LoggedInUser(
@@ -25,7 +25,7 @@ object AuthRepository {
     }
     //
 
-
+ //getting the profile by the user id
     private suspend fun loadProfile(uid: String): LoggedInUser {
         val snap = db.child("users").child(uid).get().await()
         return LoggedInUser(
