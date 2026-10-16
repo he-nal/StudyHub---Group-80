@@ -48,6 +48,11 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
 
     val user = loggedInUser
     when {
+        user != null && user.role == "ADMIN" -> AdminWelcomeScreen(
+            user = user,
+            onSignOut = { loggedInUser = null },
+            modifier = modifier
+        )
         user != null -> WelcomeScreen(
             user = user,
             onSignOut = { loggedInUser = null },
