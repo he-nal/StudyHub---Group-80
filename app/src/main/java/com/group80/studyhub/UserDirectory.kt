@@ -9,7 +9,9 @@ data class UserSummary(
     val uid: String,
     val firstName: String,
     val email: String,
-    val role: String
+    val role: String,
+    val disabled: Boolean = false
+
 ) {
     val fullName: String
         get() = listOf(firstName).filter { it.isNotBlank() }.joinToString(" ")
@@ -36,7 +38,8 @@ object UserDirectory {
                 uid = child.key ?: "",
                 firstName = child.child("firstName").getValue(String::class.java) ?: "",
                 email = child.child("email").getValue(String::class.java) ?: "",
-                role = child.child("role").getValue(String::class.java) ?: "STUDENT"
+                role = child.child("role").getValue(String::class.java) ?: "STUDENT",
+                disabled = child.child("disabled").getValue(Boolean::class.java) ?: false //disable value added for pd2
             )
             diffUsers.add(summary)
         }

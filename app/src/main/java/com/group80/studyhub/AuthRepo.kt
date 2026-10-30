@@ -26,13 +26,22 @@ object AuthRepository {
     //
 
  //getting the profile by the user id
-    private suspend fun loadProfile(uid: String): LoggedInUser {
-        val database = db.child("users").child(uid).get().await()
-        return LoggedInUser(
-            firstName = database.child("firstName").getValue(String::class.java) ?: "",
-            role = database.child("role").getValue(String::class.java) ?: "STUDENT"
-        )
-    }
+ private suspend fun loadProfile(uid: String): LoggedInUser {
+     val snap = db.child("users").child(uid).get().await()
+     if (!snap.exists()) {
+         auth.signOut()
+         throw AccountBlockedException("This account does not exist")
+     }
+     if (snap.child("disabled").getValue(Boolean::class.java) == true) {
+         auth.signOut()
+         throw AccountBlockedException("This account has been disable.")
+     }
+     return LoggedInUser(
+         firstName = snap.child("firstName").getValue(String::class.java) ?: "",
+         role = snap.child("role").getValue(String::class.java) ?: "STUDENT"
+     )
+ }
+
     suspend fun register(
         first: String,
         last: String,

@@ -30,8 +30,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Lets rememberSaveable keep the logged-in user when the phone rotates:
-// saves them as [firstName, role] and rebuilds them from that list.
+// Lets  rmbersaveable keep the loggedin user
+// saves them as firstName,role rebuilds them from that list
 private val LoggedInUserSaver = listSaver<LoggedInUser?, String>(
     save = { user -> if (user == null) emptyList() else listOf(user.firstName, user.role) },
     restore = { list -> if (list.isEmpty()) null else LoggedInUser(list[0], list[1]) }
