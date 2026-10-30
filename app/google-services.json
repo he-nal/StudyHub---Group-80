@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "691020307642",
+    "firebase_url": "https://studyhubfirebasedb-default-rtdb.firebaseio.com",
+    "project_id": "studyhubfirebasedb",
+    "storage_bucket": "studyhubfirebasedb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:691020307642:android:01c760362abb8af2c2b683",
+        "android_client_info": {
+          "package_name": "com.example.studyhubfirebasedb"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB70NgiOfDzAsO3TBJcKydpcDrH6giSqOw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:691020307642:android:e614d44d60300a6dc2b683",
+        "android_client_info": {
+          "package_name": "com.group80.studyhub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB70NgiOfDzAsO3TBJcKydpcDrH6giSqOw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

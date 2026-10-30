@@ -1,3 +1,7 @@
+//IF the role is admin, the welcomescreen of admin is displayed created by henal
+//-Jubair Ch.
+
+
 package com.group80.studyhub
 
 import androidx.compose.foundation.layout.Arrangement
