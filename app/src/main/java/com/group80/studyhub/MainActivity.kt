@@ -45,12 +45,18 @@ fun StudyHubApp(modifier: Modifier = Modifier) {
         mutableStateOf<LoggedInUser?>(null)
     }
     var showSignUp by rememberSaveable { mutableStateOf(false) }
+    var showCategories by rememberSaveable { mutableStateOf(false) }
 
     val user = loggedInUser
     when {
+        user != null && user.role == "ADMIN" && showCategories -> CategoryScreen(
+            onBack = { showCategories = false },
+            modifier = modifier
+        )
         user != null && user.role == "ADMIN" -> AdminWelcomeScreen(
             user = user,
             onSignOut = { loggedInUser = null },
+            onManageCategories = { showCategories = true },
             modifier = modifier
         )
         user != null -> WelcomeScreen(

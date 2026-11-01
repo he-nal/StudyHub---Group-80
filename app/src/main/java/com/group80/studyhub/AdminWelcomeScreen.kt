@@ -47,6 +47,7 @@ private sealed interface UsersState {
 fun AdminWelcomeScreen(
     user: LoggedInUser,
     onSignOut: () -> Unit,
+    onManageCategories: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var state by remember { mutableStateOf<UsersState>(UsersState.Loading) }
@@ -64,6 +65,7 @@ fun AdminWelcomeScreen(
         state = state,
         onRefresh = { reloadKey++ },
         onSignOut = onSignOut,
+        onManageCategories = onManageCategories,
         modifier = modifier
     )
 }
@@ -74,6 +76,7 @@ private fun AdminWelcomeContent(
     state: UsersState,
     onRefresh: () -> Unit,
     onSignOut: () -> Unit,
+    onManageCategories: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -123,6 +126,10 @@ private fun AdminWelcomeContent(
         }
 
         Spacer(Modifier.height(16.dp))
+        OutlinedButton(onClick = onManageCategories, modifier = Modifier.fillMaxWidth()) {
+            Text("Manage categories")
+        }
+        Spacer(Modifier.height(8.dp))
         Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
             Text("Sign out")
         }
