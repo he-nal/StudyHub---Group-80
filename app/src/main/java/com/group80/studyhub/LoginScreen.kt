@@ -28,6 +28,17 @@ import com.group80.studyhub.ui.theme.StudyHubTheme
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
+// The TA logs in as "admin", but Firebase only knows the admin by email.
+private const val ADMIN_USERNAME = "admin"
+private const val ADMIN_EMAIL = "admin@uottawa.ca"
+
+// Turns what was typed into the email Firebase expects: "admin" -> the admin's email,
+// anything else is used as typed (minus surrounding spaces).
+private fun toLoginEmail(input: String): String {
+    val trimmed = input.trim()
+    return if (trimmed.equals(ADMIN_USERNAME, ignoreCase = true)) ADMIN_EMAIL else trimmed
+}
+
 @Composable
 fun LoginScreen(
     onLoginSuccess: (LoggedInUser) -> Unit,
@@ -45,7 +56,7 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
 
     fun attemptLogin() {
-        usernameError = if (username.isBlank()) "Email is required" else null
+        usernameError = if (username.isBlank()) "Email or username is required" else null
         passwordError = if (password.isBlank()) "Password is required" else null
         loginError = null
 
@@ -53,7 +64,17 @@ fun LoginScreen(
         // Stop here if either field is empty; the messages above will show.
         if (usernameError != null || passwordError != null) return
         scope.launch {
-            AuthRepository.login(username.trim(), password).onSuccess { onLoginSuccess(it) }.onFailure { loginError = "Invalid username or password" }
+            AuthRepository.login(toLoginEmail(username), password)
+                .onSuccess { onLoginSuccess(it) }
+                .onFailure { error ->
+                    // A disabled or deleted account gets its own message from AuthRepository.
+                    // Anything else means the email or password was wrong.
+                    loginError = if (error is AccountBlockedException) {
+                        error.message
+                    } else {
+                        "Invalid email/username or password"
+                    }
+                }
         }
 
     }
@@ -74,10 +95,12 @@ fun LoginScreen(
                 username = it
                 usernameError = null  // hide the error once they start typing
             },
-            label = { Text("Email") },
+            label = { Text("Email or username") },
             isError = usernameError != null,
             supportingText = { usernameError?.let { Text(it) } },
             singleLine = true,
+            // Email keyboard: has "@" and doesn't auto-capitalize the first letter.
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(12.dp))
