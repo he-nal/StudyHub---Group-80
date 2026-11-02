@@ -46,6 +46,31 @@ object CategoryRepository {
         Result.failure(e)
     }
 
+    //same checks as add(), but keeps the id and saves over the existing category.
+    suspend fun update(id: String, name: String, description: String): Result<Category> = try {
+        require(id.isNotBlank()) { "Missing category id" }
+        val cleanName = CategoryValidator.normalizeName(name)
+        val cleanDescription = description.trim()
+
+        //new read, like add(): the category may have been deleted, or its new name taken, since the list loaded.
+        val existing = fetchAll().getOrThrow()
+        if (existing.none { it.id == id }) {
+            throw IllegalStateException("This category no longer exists")
+        }
+        //skip the category itself, so keeping the same name isn't a "duplicate".
+        if (existing.any { it.id != id && CategoryValidator.sameName(it.name, cleanName) }) {
+            throw DuplicateCategoryException()
+        }
+
+        //updateChildren only changes these two fields; anything else stored on the category is kept.
+        categories.child(id).updateChildren(mapOf("name" to cleanName, "description" to cleanDescription)).await()
+        Result.success(Category(id, cleanName, cleanDescription))
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
     suspend fun delete(id: String): Result<Unit> = try {
         require(id.isNotBlank()) { "Missing category id" }
         categories.child(id).removeValue().await()

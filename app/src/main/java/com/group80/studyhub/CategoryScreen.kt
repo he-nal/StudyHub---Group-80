@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -50,10 +51,8 @@ private sealed interface CategoriesState {
 }
 
 
- //Admin screen for the course-category catalogue: list, add and delete.
+ //Admin screen for the course-category catalogue: list, add, edit and delete.
  //Reached from the "Manage categories" button on AdminWelcomeScreen.
- //Edit category add an "Edit" button next to "Delete" in CategoryRow
- //and reuse CategoryValidator.validate(...) for its fields.
 
 @Composable
 fun CategoryScreen(
@@ -66,6 +65,7 @@ fun CategoryScreen(
     var state by remember { mutableStateOf<CategoriesState>(CategoriesState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var showAdd by rememberSaveable { mutableStateOf(false) }
+    var pendingEdit by remember { mutableStateOf<Category?>(null) }
     var pendingDelete by remember { mutableStateOf<Category?>(null) }
     var deleting by remember { mutableStateOf(false) }
     var actionError by remember { mutableStateOf<String?>(null) }
@@ -80,11 +80,37 @@ fun CategoryScreen(
     val existingNames = (state as? CategoriesState.Loaded)?.categories?.map { it.name }.orEmpty()
 
     if (showAdd) {
-        AddCategoryDialog(
+        CategoryFormDialog(
+            title = "Add category",
+            confirmText = "Add",
+            savingText = "Adding...",
+            initialName = "",
+            initialDescription = "",
             existingNames = existingNames,
+            save = { name, description -> CategoryRepository.add(name, description) },
             onDismiss = { showAdd = false },
-            onAdded = {
+            onSaved = {
                 showAdd = false
+                actionError = null
+                reloadKey++
+            }
+        )
+    }
+
+    pendingEdit?.let { category ->
+        CategoryFormDialog(
+            title = "Edit category",
+            confirmText = "Save",
+            savingText = "Saving...",
+            initialName = category.name,
+            initialDescription = category.description,
+            //leave out this category's own name, so keeping it isn't flagged as a duplicate.
+            existingNames = (state as? CategoriesState.Loaded)?.categories
+                ?.filter { it.id != category.id }?.map { it.name }.orEmpty(),
+            save = { name, description -> CategoryRepository.update(category.id, name, description) },
+            onDismiss = { pendingEdit = null },
+            onSaved = {
+                pendingEdit = null
                 actionError = null
                 reloadKey++
             }
@@ -130,6 +156,7 @@ fun CategoryScreen(
         onBack = onBack,
         onRefresh = { reloadKey++ },
         onAddClick = { showAdd = true },
+        onEditClick = { pendingEdit = it },
         onDeleteClick = { pendingDelete = it },
         modifier = modifier
     )
@@ -142,6 +169,7 @@ private fun CategoryScreenContent(
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onAddClick: () -> Unit,
+    onEditClick: (Category) -> Unit,
     onDeleteClick: (Category) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -191,7 +219,11 @@ private fun CategoryScreenContent(
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(state.categories, key = { it.id }) { category ->
-                                CategoryRow(category = category, onDelete = { onDeleteClick(category) })
+                                CategoryRow(
+                                    category = category,
+                                    onEdit = { onEditClick(category) },
+                                    onDelete = { onDeleteClick(category) }
+                                )
                             }
                         }
                     }
@@ -201,14 +233,20 @@ private fun CategoryScreenContent(
 }
 
 @Composable
-private fun CategoryRow(category: Category, onDelete: () -> Unit) {
+private fun CategoryRow(category: Category, onEdit: () -> Unit, onDelete: () -> Unit) {
     Column {
         ListItem(
             headlineContent = { Text("Name: " + category.name) },
             supportingContent = { Text("Description: " + category.description) },
             trailingContent = {
-                OutlinedButton(onClick = onDelete) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                //stacked like the Disable/Delete buttons on AdminWelcomeScreen, so they fit on narrow phones.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    OutlinedButton(onClick = onEdit, modifier = Modifier.width(100.dp)) {
+                        Text("Edit")
+                    }
+                    OutlinedButton(onClick = onDelete, modifier = Modifier.width(100.dp)) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
                 }
             }
         )
@@ -216,14 +254,22 @@ private fun CategoryRow(category: Category, onDelete: () -> Unit) {
     }
 }
 
+//Shared form for "Add category" and "Edit category": same fields, same validation.
+//save is the database call to make (add or update); it only runs once the fields are valid.
 @Composable
-private fun AddCategoryDialog(
+private fun CategoryFormDialog(
+    title: String,
+    confirmText: String,
+    savingText: String,
+    initialName: String,
+    initialDescription: String,
     existingNames: List<String>,
+    save: suspend (name: String, description: String) -> Result<Category>,
     onDismiss: () -> Unit,
-    onAdded: () -> Unit
+    onSaved: () -> Unit
 ) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
+    var name by rememberSaveable { mutableStateOf(initialName) }
+    var description by rememberSaveable { mutableStateOf(initialDescription) }
     var errors by remember { mutableStateOf(CategoryFieldErrors()) }
     var serverError by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
@@ -236,17 +282,17 @@ private fun AddCategoryDialog(
 
         saving = true
         scope.launch {
-            CategoryRepository.add(name, description)
+            save(name, description)
                 .onSuccess {
                     saving = false
-                    onAdded()
+                    onSaved()
                 }
                 .onFailure {
                     saving = false
                     if (it is DuplicateCategoryException) {
                         errors = CategoryFieldErrors(name = it.message)
                     } else {
-                        serverError = it.message ?: "Could not add category"
+                        serverError = it.message ?: "Could not save category"
                     }
                 }
         }
@@ -254,7 +300,7 @@ private fun AddCategoryDialog(
 
     AlertDialog(
         onDismissRequest = { if (!saving) onDismiss() },
-        title = { Text("Add category") },
+        title = { Text(title) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
@@ -296,7 +342,7 @@ private fun AddCategoryDialog(
         },
         confirmButton = {
             Button(enabled = !saving, onClick = { submit() }) {
-                Text(if (saving) "Adding..." else "Add")
+                Text(if (saving) savingText else confirmText)
             }
         },
         dismissButton = {
@@ -320,6 +366,7 @@ private fun CategoryScreenPreview() {
             onBack = {},
             onRefresh = {},
             onAddClick = {},
+            onEditClick = {},
             onDeleteClick = {}
         )
     }
