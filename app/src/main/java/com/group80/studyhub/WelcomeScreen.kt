@@ -1,6 +1,9 @@
 package com.group80.studyhub
 
+import android.app.Activity
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +41,17 @@ fun WelcomeScreen(
     val scope = rememberCoroutineScope()
     var state by remember { mutableStateOf<MyCoursesState>(MyCoursesState.Loading) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var pendingDelete by remember { mutableStateOf<Course?>(null) } // course waiting for "Delete?" confirmation
+    var deleting by remember { mutableStateOf(false) }
+    var actionError by remember { mutableStateOf<String?>(null) }
+
+    // Opens CreateCourseActivity in edit mode. It finishes with RESULT_OK after saving,
+    // so reload the list then to show the new values.
+    val editCourseLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) reloadKey++
+    }
 
     LaunchedEffect(reloadKey) {
         state = MyCoursesState.Loading
@@ -49,6 +63,39 @@ fun WelcomeScreen(
         CourseRepository.fetchForUser(uid)
             .onSuccess { state = MyCoursesState.Loaded(it) }
             .onFailure { state = MyCoursesState.Error(it.message ?: "Could not load courses") }
+    }
+
+    // Rule for a course's tasks: deleting the course deletes all of them too, and the dialog says so.
+    pendingDelete?.let { course ->
+        AlertDialog(
+            onDismissRequest = { if (!deleting) pendingDelete = null },
+            title = { Text("Delete course?") },
+            text = {
+                Text(
+                    "\"${course.code} – ${course.title}\" and all of its tasks will be " +
+                        "permanently deleted. This can't be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !deleting,
+                    onClick = {
+                        deleting = true
+                        actionError = null
+                        scope.launch {
+                            CourseRepository.delete(course.id)
+                                .onSuccess { reloadKey++ }
+                                .onFailure { actionError = it.message ?: "Could not delete course" }
+                            deleting = false
+                            pendingDelete = null
+                        }
+                    }
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(enabled = !deleting, onClick = { pendingDelete = null }) { Text("Cancel") }
+            }
+        )
     }
 
     Column(
@@ -79,6 +126,10 @@ fun WelcomeScreen(
         }
         HorizontalDivider()
 
+        actionError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(vertical = 8.dp))
+        }
+
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when (val s = state) {
                 is MyCoursesState.Loading -> {
@@ -105,6 +156,24 @@ fun WelcomeScreen(
                                     headlineContent = { Text(course.code) },
                                     supportingContent = {
                                         Text("${course.title}\n${course.term}")
+                                    },
+                                    trailingContent = {
+                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            OutlinedButton(
+                                                onClick = {
+                                                    // passing the course id is what puts the form in edit mode
+                                                    editCourseLauncher.launch(
+                                                        Intent(context, CreateCourseActivity::class.java)
+                                                            .putExtra(EXTRA_COURSE_ID, course.id)
+                                                    )
+                                                },
+                                                modifier = Modifier.width(100.dp)
+                                            ) { Text("Edit") }
+                                            OutlinedButton(
+                                                onClick = { pendingDelete = course },
+                                                modifier = Modifier.width(100.dp)
+                                            ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                                        }
                                     },
                                     modifier = Modifier.clickable {
                                         context.startActivity(
