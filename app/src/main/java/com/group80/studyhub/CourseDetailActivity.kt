@@ -1,5 +1,6 @@
 package com.group80.studyhub
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,7 @@ fun CourseDetailScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var state by remember { mutableStateOf<CourseDetailState>(CourseDetailState.Loading) }
 
     LaunchedEffect(courseId) {
@@ -63,13 +67,24 @@ fun CourseDetailScreen(
             .onFailure { state = CourseDetailState.Error(it.message ?: "Could not load course") }
     }
 
-    CourseDetailContent(state = state, onBack = onBack, modifier = modifier)
+    CourseDetailContent(
+        state = state,
+        onBack = onBack,
+        onOpenTasks = {
+            context.startActivity(
+                Intent(context, TaskListActivity::class.java)
+                    .putExtra(EXTRA_COURSE_ID, courseId)
+            )
+        },
+        modifier = modifier
+    )
 }
 
 @Composable
 private fun CourseDetailContent(
     state: CourseDetailState,
     onBack: () -> Unit,
+    onOpenTasks: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -88,14 +103,14 @@ private fun CourseDetailContent(
                     modifier = Modifier.align(Alignment.Center).padding(16.dp),
                     textAlign = TextAlign.Center
                 )
-                is CourseDetailState.Loaded -> CourseDetails(state.course)
+                is CourseDetailState.Loaded -> CourseDetails(state.course, onOpenTasks)
             }
         }
     }
 }
 
 @Composable
-private fun CourseDetails(course: Course) {
+private fun CourseDetails(course: Course, onOpenTasks: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -103,6 +118,7 @@ private fun CourseDetails(course: Course) {
         Text(course.code, style = MaterialTheme.typography.headlineMedium)
         Text(course.title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(4.dp))
+        Button(onClick = onOpenTasks, modifier = Modifier.fillMaxWidth()) { Text("View tasks") }
         HorizontalDivider()
 
         DetailRow("Course code", course.code)
@@ -138,7 +154,8 @@ private fun CourseDetailPreview() {
                     description = "Requirements, design and testing of software systems."
                 )
             ),
-            onBack = {}
+            onBack = {},
+            onOpenTasks = {}
         )
     }
 }
