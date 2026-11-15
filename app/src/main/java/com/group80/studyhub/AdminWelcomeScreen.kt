@@ -48,6 +48,7 @@ fun AdminWelcomeScreen(
     user: LoggedInUser,
     onSignOut: () -> Unit,
     onManageCategories: () -> Unit = {},
+    onManageCourses: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var state by remember { mutableStateOf<UsersState>(UsersState.Loading) }
@@ -66,6 +67,7 @@ fun AdminWelcomeScreen(
         onRefresh = { reloadKey++ },
         onSignOut = onSignOut,
         onManageCategories = onManageCategories,
+        onManageCourses = onManageCourses,
         modifier = modifier
     )
 }
@@ -77,6 +79,7 @@ private fun AdminWelcomeContent(
     onRefresh: () -> Unit,
     onSignOut: () -> Unit,
     onManageCategories: () -> Unit,
+    onManageCourses: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -126,11 +129,29 @@ private fun AdminWelcomeContent(
         }
 
         Spacer(Modifier.height(16.dp))
-        OutlinedButton(onClick = onManageCategories, modifier = Modifier.fillMaxWidth()) {
+
+        OutlinedButton(
+            onClick = onManageCourses,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Manage courses")
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedButton(
+            onClick = onManageCategories,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Manage categories")
         }
+
         Spacer(Modifier.height(8.dp))
-        Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+
+        Button(
+            onClick = onSignOut,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Sign out")
         }
     }
@@ -154,7 +175,6 @@ private fun UserRow(user: UserSummary, onChanged: () -> Unit) {
                     }
                 )
             },
-            // != so admin cant delete itself, therefore the restruction form pd1 remains as there can only be 1 admin
             trailingContent = {
                 if (user.role != "ADMIN") {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

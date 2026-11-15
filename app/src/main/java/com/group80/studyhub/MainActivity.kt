@@ -14,6 +14,8 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
 import com.group80.studyhub.ui.theme.StudyHubTheme
 
 class MainActivity : ComponentActivity() {
@@ -30,45 +32,54 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Lets  rmbersaveable keep the loggedin user
-// saves them as firstName,role rebuilds them from that list
+
 private val LoggedInUserSaver = listSaver<LoggedInUser?, String>(
     save = { user -> if (user == null) emptyList() else listOf(user.firstName, user.role) },
     restore = { list -> if (list.isEmpty()) null else LoggedInUser(list[0], list[1]) }
 )
 
-// Decides which screen to show.
 @Composable
 fun StudyHubApp(modifier: Modifier = Modifier) {
-    // Who is logged in. null means nobody is.
     var loggedInUser by rememberSaveable(stateSaver = LoggedInUserSaver) {
         mutableStateOf<LoggedInUser?>(null)
     }
     var showSignUp by rememberSaveable { mutableStateOf(false) }
     var showCategories by rememberSaveable { mutableStateOf(false) }
+    var showCourses by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val user = loggedInUser
     when {
+        user != null && user.role == "ADMIN" && showCourses -> CourseScreen(
+            onBack = { showCourses = false },
+            modifier = modifier
+        )
+
         user != null && user.role == "ADMIN" && showCategories -> CategoryScreen(
             onBack = { showCategories = false },
             modifier = modifier
         )
+
         user != null && user.role == "ADMIN" -> AdminWelcomeScreen(
             user = user,
             onSignOut = { loggedInUser = null },
             onManageCategories = { showCategories = true },
+            onManageCourses = { showCourses = true },
             modifier = modifier
         )
+
         user != null -> WelcomeScreen(
             user = user,
             onSignOut = { loggedInUser = null },
             modifier = modifier
         )
+
         showSignUp -> RegisterScreen(
             onRegistered = { showSignUp = false },
             onBack = { showSignUp = false },
             modifier = modifier
         )
+
         else -> LoginScreen(
             onLoginSuccess = { loggedInUser = it },
             onSignUpClick = { showSignUp = true },
