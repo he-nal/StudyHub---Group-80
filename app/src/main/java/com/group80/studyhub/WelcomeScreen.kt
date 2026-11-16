@@ -83,9 +83,12 @@ fun WelcomeScreen(
                         deleting = true
                         actionError = null
                         scope.launch {
-                            CourseRepository.delete(course.id)
+                            deleteCourseAndTasks(course.id)
                                 .onSuccess { reloadKey++ }
-                                .onFailure { actionError = it.message ?: "Could not delete course" }
+                                .onFailure {
+                                    actionError = it.message ?: "Could not delete course"
+                                    reloadKey++ // the course may be gone even if its tasks weren't removed
+                                }
                             deleting = false
                             pendingDelete = null
                         }

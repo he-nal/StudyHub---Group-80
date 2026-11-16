@@ -46,7 +46,12 @@ fun CourseScreen(
         AlertDialog(
             onDismissRequest = { if (!deleting) pendingDelete = null },
             title = { Text("Delete course?") },
-            text = { Text("\"${course.code} – ${course.title}\" will be permanently deleted.") },
+            text = {
+                Text(
+                    "\"${course.code} – ${course.title}\" and all of its tasks (for every assigned student) " +
+                        "will be permanently deleted. This can't be undone."
+                )
+            },
             confirmButton = {
                 TextButton(
                     enabled = !deleting,
@@ -54,7 +59,8 @@ fun CourseScreen(
                         deleting = true
                         actionError = null
                         scope.launch {
-                            CourseRepository.delete(course.id)
+                            // same rule as the student's delete: the course's tasks go too (CourseDeletion.kt)
+                            deleteCourseAndTasks(course.id)
                                 .onSuccess {
                                     deleting = false
                                     pendingDelete = null
@@ -64,6 +70,7 @@ fun CourseScreen(
                                     deleting = false
                                     pendingDelete = null
                                     actionError = it.message ?: "Could not delete course"
+                                    reloadKey++ // the course may be gone even if its tasks weren't removed
                                 }
                         }
                     }
