@@ -236,4 +236,45 @@ object TaskRepository {
     } catch (e: Exception) {
         Result.failure(e)
     }
+
+    /** Changes only the status, e.g. ticking "completed" in the task list. Other fields are left as they are. */
+    suspend fun setStatus(courseId: String, taskId: String, status: TaskStatus): Result<TaskStatus> = try {
+        require(courseId.isNotBlank()) { "Missing course id" }
+        require(taskId.isNotBlank()) { "Missing task id" }
+        get(courseId, taskId).getOrThrow() // fails if the task was deleted meanwhile
+        courseTasks(courseId).child(taskId).child("status").setValue(status.key).await()
+        Result.success(status)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /** Removes one of the signed-in student's tasks (it can only reach their own, see courseTasks). */
+    suspend fun delete(courseId: String, taskId: String): Result<Unit> = try {
+        require(courseId.isNotBlank()) { "Missing course id" }
+        require(taskId.isNotBlank()) { "Missing task id" }
+        courseTasks(courseId).child(taskId).removeValue().await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * Used when a course is deleted: removes every given student's tasks for that course.
+     * One multi-path write, so either all of them are removed or none are.
+     */
+    suspend fun deleteAllForCourse(courseId: String, uids: Collection<String>): Result<Unit> = try {
+        require(courseId.isNotBlank()) { "Missing course id" }
+        val updates = uids.filter { it.isNotBlank() }
+            .associate { uid -> "userTasks/$uid/$courseId" to null }
+        if (updates.isNotEmpty()) root.updateChildren(updates).await()
+        Result.success(Unit)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 }

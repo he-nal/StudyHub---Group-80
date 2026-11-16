@@ -1,5 +1,6 @@
 package com.group80.studyhub
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.group80.studyhub.ui.theme.StudyHubTheme
 import androidx.compose.runtime.rememberCoroutineScope
+import com.google.firebase.FirebaseNetworkException
 import kotlinx.coroutines.launch
 
 // The TA logs in as "admin", but Firebase only knows the admin by email.
@@ -67,12 +69,16 @@ fun LoginScreen(
             AuthRepository.login(toLoginEmail(username), password)
                 .onSuccess { onLoginSuccess(it) }
                 .onFailure { error ->
-                    // A disabled or deleted account gets its own message from AuthRepository.
-                    // Anything else means the email or password was wrong.
-                    loginError = if (error is AccountBlockedException) {
-                        error.message
-                    } else {
-                        "Invalid email/username or password"
+                    // Full error (type, message, stack trace) in Logcat, filter by "LoginScreen".
+                    Log.e("LoginScreen", "Login failed for ${toLoginEmail(username)}", error)
+
+                    loginError = when (error) {
+                        // A disabled or deleted account gets its own message from AuthRepository.
+                        is AccountBlockedException -> error.message
+                        // Firebase couldn't be reached, so we don't know if the password was right.
+                        is FirebaseNetworkException -> "No internet connection"
+                        // Anything else means the email or password was wrong.
+                        else -> "Invalid email/username or password"
                     }
                 }
         }
